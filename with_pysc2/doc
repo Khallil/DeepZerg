@@ -1,0 +1,47 @@
+
+TODO 
+- how to get the build queue
+- handle controls group
+
+HANDCRAFT ACTIONS:
+- Train d'overlord
+- Build de batiment 
+- Select Larva and Army before specific smart_actions
+- Train de queen
+- Queen inject
+
+COORDINATE OF MAPS:
+Simple 64:
+    base down right : 40-47
+    base top left : 16-21
+
+SAVE_CODE
+Pour savoir si y'a du creep et si c'est free :
+    r = 3
+    p = obs.observation.feature_minimap.creep
+    if obs.observation.feature_minimap.player_relative[x][y] == 0:
+        if p[x][y] == 1 and p[x-r][y-r] == 1 and p[x+r][y+r] and p[x-r][y+r] and p[x+r][y-r]:
+            is_free_creep = 1
+    # Marche pas bien jsais pas pourquoi
+
+
+CAS COMPLEXES : 
+    1. Si l'ia choisis d'attaquer, cela va prendre au moins 15 secondes pour que les effets
+    de ce choix soit appliquer sur l'état. Ce qui fait que la relation ne serait pas faite, pire 
+    d'autres relations vont se faire à la place, example si une unité est tué au juste après que l'iae
+    est choisi de créer un drone.
+        ?Solution = 1.Réduire les mult_step pour que la prochaine decision soit prise une fois que les
+    zergling aient fini de traverser la map
+                    2.Rajouter des paramètres d'état ex: distance entre les bases, distances entre
+    l'armée et la base adverse
+
+DISCUSSION : 
+    let's talk a little bit technical, I guess to continue to have the reinforcment learning part,
+    we should embedd the actions, like for example build_overlord can be an action, but we embedd the select larva
+    action in a script, so the select larva. And we can go more high as well like for Build Roach which will create the building
+    then select the larva, then building the roch
+
+CONTROL_GROUPS :
+    0 = Hatchery (train queen)
+    1 = Overlord ()
+
