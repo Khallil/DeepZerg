@@ -50,16 +50,21 @@ class SmartBot2(BotAIModified):
         '''
 
         Etapes:
+            {Get step_points}
             On get la hauteur maximale du creep - height (on utilise les bits pour get plus vite)
                 Get la distance entre le plus petit y et le plus grand y
-                convertir l'index en corrdone y
+                convertir l'index en corrdone y:
+                    plus_petit y = 26, plus_grand_y = 120
+                    26 = 4 en coordonée y, 120 = 12 en coordonée y 
+                    12 - 4 = 8; height = 8
             On get la largeur maximale du creep - width
                 Get la distance entre le plus petit x et le plus grand x
-                convertir l'index en coordonee x
+                convertir l'index en coordonee x:
+                    pareil que pour y
             On calcule l'hypothenuse
             iterations = hypothenuse / diametre_creep
-            x = 0
-            while x < iterations:
+            j = 0
+            while j < iterations:
                 A chaque étape on ferait : 
                     i_x = (width * diametre_creep) / (width + height)
                     i_y = (heigth * diametre_creep) / (width + height)
@@ -67,7 +72,36 @@ class SmartBot2(BotAIModified):
                     si top_righ: x + i_x, 0 + i_y
                     si down_lef: 0 + i_x, y + i_y
                     si down_rig: x + i_x, y - i_y
-                    ajoute le (x,y) dans une array
+                    ajoute le (x,y) dans "step_points"
+
+            {Get creep point}
+            Ensuite on parcourse step_points et pour chaque point (step_x,step_y):
+                on cree un grand tableau "blank_points" qui va save tous les points
+                non creep + terre visitable + terre visible qui sont dans le cadre :
+                si down_left : 
+                    start x = step_x
+                    start y = step_y
+                    while x > 0 || x > last_step_x:
+                        x--
+                        while y < first_y || y < last_step_y:
+                            y --
+                            si point == blank_point:
+                                blank_points.append(blank_point)
+                   
+                pour point dans "blank_points"
+                    on regarde chaque pixel autour 
+                        si hashmap[x,y] == False:
+                            on check si creep dessus
+                            on ajoute le point du creep dans creep_points
+                            on set le hashmap[x,y] = True
+                        sinon:
+                            on regarde le pixel suivant
+                
+                pour chaque creep_points:
+                    on calcule la distance euclidienne entre c_x,c_y et step_x,_step_y
+                    on save le creep point qui a max distance
+
+            {Expand Creep with queen or creep tumor}
         '''
 
     async def get_position(self):
