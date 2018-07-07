@@ -54,6 +54,7 @@ class BotAIModified(sc2.BotAI):
                 [( distance, dy) for dy in range(-distance, distance+1, placement_step)]
             )]
             res = await self._client.query_building_placement(building, possible_positions)
+            possible = [p for r, p in zip(res, possible_positions) if r == ActionResult.Success]
             if player_left_up == (True,False):
                 possible = [p for r, p in zip(res, possible_positions) if r == ActionResult.Success and (p[1] > near[1] and p[0] < near[0])]
             elif player_left_up == (False,False):

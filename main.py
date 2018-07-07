@@ -21,12 +21,13 @@ class SmartBot2(BotAIModified):
     async def on_step(self, iteration):
         self.iteration = iteration
         if self.iteration == 0:
-            self.position_left_up = await self.get_position()
+            self.position_left_up = await self.get_step_points()
         #await self.train_overlord() # basic function
         #await self.train_workers() # basic function
         #await self.distribute_workers() # basic function
         #await self.build_assimilator() # basic function
         await self.build_pool() # basic function
+        #await self.get_creep()
         #await self.train_queens() # basic function
         #await self.queen_inject() # basic function
         #await self.expand() # Macro strat 
@@ -39,28 +40,56 @@ class SmartBot2(BotAIModified):
         #print("creep_proto : ",self.state.creep._proto)
         print("creep_data : ",self.state.creep.data[0])
         print("self.state.wh : ", self.state.creep.width,self.state.creep.height)
+        #self.state.creep.print()
         map_width = self.state.creep.width
         i = 0
-        for d in self.state.creep.data:
-            if d == 1:
-                print(i)
-            i+=1
-        print("creep on Hatch : ",self.state.creep.__getitem__( (int(position[0]),map_width - int(position[1])))) # get item est foireux
+        #print("#",end=("")) if self.state.creep.__getitem__((x,y)) == 1 else print(" ",end=(""))
+        print(int(4/5))
+        print(int(24/5))
+        '''for y in range(self.state.creep.height):
+            for x in range(self.state.creep.width):
+                print("#",end=("")) if self.state.creep.__getitem__((x,y)) == 1 else print(" ",end=(""))
+                i+=1
+            print("")
+        #print("creep on Hatch : ",self.state.creep.__getitem__( (int(position[0]),map_width - int(position[1])))) # get item est foireux
+        print("min : ",min(self.state.creep.data))
+        print("max : ",max(self.state.creep.data))
+        '''
 
+    async def get_height_width(self):
+        creep_coor = list()
+        i = 0
+        while i < len(self.state.creep.data):
+            if self.state.creep.data[i] == 1:
+                y = i / self.state.creep.width
+                x = i - (self.state.creep.width * int(y))
+                creep_coor.append((x,int(y)))
+            i+=1
+        x = [creep[0] for creep in creep_coor]
+        y = [creep[1] for creep in creep_coor]
+        width = (max(x) - min(x)) +1
+        height = (max(y) - min(y)) +1
+        return height,width
+
+    async def get_step_points(self):
+        h,w = self.get_height_width()
+        print(h,w)
+        hypothenuse = x**(pow(h,2)+pow(w,2))
+        print(hypothenuse)
         '''
 
         Etapes:
+            {Get height,width}
+            On mets tous les indexs qui sont du creep dans un tableau
+            On converti chaque index en coordonées
+                y = index / len(width)
+                x =  (index - (len(width) * y))
+            On get le min y On get le max y
+            height = (max_y - min_y) + 1
+            On get le min x On get le max x
+            width = (max_x - min_x) + 1
+    
             {Get step_points}
-            On get la hauteur maximale du creep - height (on utilise les bits pour get plus vite)
-                Get la distance entre le plus petit y et le plus grand y
-                convertir l'index en corrdone y:
-                    plus_petit y = 26, plus_grand_y = 120
-                    26 = 4 en coordonée y, 120 = 12 en coordonée y 
-                    12 - 4 = 8; height = 8
-            On get la largeur maximale du creep - width
-                Get la distance entre le plus petit x et le plus grand x
-                convertir l'index en coordonee x:
-                    pareil que pour y
             On calcule l'hypothenuse
             iterations = hypothenuse / diametre_creep
             j = 0
