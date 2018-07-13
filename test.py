@@ -1,35 +1,36 @@
 #coding:utf-8#
 
 #Besoin de ça pour le hashmap
-'''dico = dict()
+dico = dict()
+s_key = (2,3)
+dico[s_key] = True
 
-dico['prout'] = [[(12,22),(34,56)],"zerg"]
+'''dico['prout'] = [[(12,22),(34,56)],"zerg"]
 
-print(dico)
+    print(dico)
 
-new = (23,43)
-old = (12,22)
-print(dico['prout'][0])
-if new not in dico['prout'][0]:
-    print("on add")
+    new = (23,43)
+    old = (12,22)
+    print(dico['prout'][0])
+    if new not in dico['prout'][0]:
+        print("on add")
 
-if old not in dico['prout'][0]:
-    print("on add")
+    if old not in dico['prout'][0]:
+        print("on add")
 
-if 'prout' in dico:
-    print("prout")
+    if 'prout' in dico:
+        print("prout")
 
-if 'caca' in dico:
-    print("caca")
+    if 'caca' in dico:
+        print("caca")
+'''
 
+key = (1,2)
+dico_item= dico.get(key)
 
-key = "caca"
-print(dico.get(key))
-dico_prout = dico.get(key)
-if dico_prout != None:
-    dico_prout[0].append((67,89))
-else:
-    dico_prout = [[],"protoss"]
+print(dico_item)
+if dico_item == None:
+    dico[key] = True
 
 print(dico)
 '''
@@ -56,12 +57,11 @@ for index in indexes:
 
 # 0.0009
 
-'''
     y = index/w
     x = (y - int(y)) * w
-'''
 
 
 #print(int(y))
 #print(int(x))
 print("--- %s seconds ---" % (time.time() - start_time))
+'''

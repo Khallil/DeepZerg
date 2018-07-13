@@ -1,5 +1,6 @@
-import random
+#coding:utf-8
 
+import random
 #import sc2
 from sc2 import run_game, maps, Race, Difficulty
 from sc2.player import Bot, Computer
@@ -9,7 +10,8 @@ from sc2.data import Race
 from botai import BotAIModified
 from sc2.pixel_map import PixelMap
 from math import sqrt
-from sc2.position import Point2
+from sc2.position import Point2,Point3
+from sc2.unit import Unit
 import time
 import sys
 
@@ -20,6 +22,7 @@ class SmartBot2(BotAIModified):
         self.iteration = 0
         self.assimilator_order = 0
         self.worker_tag_gas = 0
+        self.count = 0
         self.player_left_up = None
 
     async def on_step(self, iteration):
@@ -27,30 +30,8 @@ class SmartBot2(BotAIModified):
         if self.iteration == 0:
             #self.game_info.pathing_grid.print()
             self.player_left_up = await self.get_position()
-            h,w = await self.get_height_width()
-            step_points = await self.get_step_points(h,w)
-            blank_points,points_scanned = await self.get_blank_points()   
+        if iteration % (20*22.4) == 0:
             await self.print_result()
-           
-
-            '''self.state.creep.print()
-            print("="*30)
-            self.state.visibility.print()
-            print("="*30)
-
-            blank_points,points_scanned = await self.get_blank_points()
-            for y in range(self.state.creep.height):
-                for x in range(self.state.creep.width):
-                    print("#",end=(""))  if (x,y) in points_scanned else print(" ",end=(""))
-                print("")
-            print("blank_points : ",blank_points)
-            '''
-            '''
-            for y in range(self.state.creep.height):
-                for x in range(self.state.creep.width):
-                    print("#",end=("")) if self.state.creep.__getitem__((x,y)) == 1 else print(" ",end=(""))
-                print("")'''
-        #await self._client.debug_text("SCAN",points_scanned)
 
         #print(blank_points)
         #self.state.visibility.print()
@@ -65,37 +46,44 @@ class SmartBot2(BotAIModified):
         #await self.queen_inject() # basic function
         #await self.expand() # Macro strat
 
-    async def print_result(self):
-        i = 0
-        while True:
-            try: 
-                await self.clean_trash_blank_points()
-                h,w = await self.get_height_width()
-                step_points = await self.get_step_points(h,w)
-                blank_points,points_scanned = await self.get_blank_points()   
-                print("CUT",i)
-                # open un nouveau fichier
-                with open("file_{:d}.txt".format(i),"a+") as file :
-                    for y in range(self.state.creep.height):
-                        for x in range(self.state.creep.width):
-                            if (x,y) in step_points:
-                                file.write("+")
-                            elif (x,y) in blank_points:
-                                file.write("0")
-                            elif (self.state.visibility.__getitem__((x,y)) and 
-                                self.state.creep.__getitem__((x,y)) == 0 and
-                                self.game_info.placement_grid.__getitem__((x,y))):
-                                file.write("#")
-                            elif (x,y) in points_scanned:
-                                file.write("o")
-                            else:
-                                file.write(" ")
-                        file.write("\n")
-                i+=1
-                time.sleep(20)
-            except KeyboardInterrupt:
-                print("Bye")
-                sys.exit()
+    async def display_labels_lol(self):
+        text = "CREEP"
+        width = self.state.creep.width
+        height = self.state.creep.height
+        positions = {Point2((x, y)) for x in range(width) for y in range(height)}
+        creepPositions = [p for p in positions if self.hasCreep(p)] # not 0 means there is creep! 
+        print(creepPositions)
+        print("AMOUNT OF POSITIONS: {}".format(len(creepPositions)))
+        await self._client.debug_text(text, creepPositions)
+
+    def hasCreep(self, pos):
+        # returns True if there is creep at position
+        assert isinstance(pos, (Point2, Point3, Unit))
+        pos = pos.position.to2.rounded
+        return self.state.creep[pos] != 0 # not 0 means there is creep
+
+    async def print_result(self):            
+        creep_points, best_xy  = await self.clean_trash_blank_points()
+        h,w = await self.get_height_width()
+        step_points = await self.get_step_points(h,w)
+        blank_points,points_scanned = await self.get_blank_points()   
+        # open un nouveau fichier
+
+        with open("file_{:d}.txt".format(self.count),"a+") as file :
+            for y in range(self.state.creep.height):
+                for x in range(self.state.creep.width):
+                    if (x,y) in step_points:
+                        file.write("+")
+                    elif (x,y) == best_xy:
+                        file.write("X")
+                    elif (x,y) in creep_points:
+                        file.write("#")
+                    elif (x,y) in points_scanned:
+                        file.write("o")
+                    else:
+                        file.write(" ")
+                file.write("\n")
+        self.count +=1
 
     async def get_distance(self):
         overlords = self.units(OVERLORD).ready
@@ -121,7 +109,7 @@ class SmartBot2(BotAIModified):
         if self.player_left_up == (False,False):
             width_supp = self.state.creep.width - max(x)
             height_supp = self.state.creep.height - max(y)
-        elif self.player_left_up == (True,True):
+        else: #self.player_left_up == (True,True):
             width_supp = min(x) 
             height_supp = min(y)
         return height*2+height_supp,width*2+width_supp
@@ -164,7 +152,6 @@ class SmartBot2(BotAIModified):
         blank_points = list()
         points_scanned = list()
         i = 1
- 
         if self.player_left_up == (True,False) or self.player_left_up == (False,True):
             while i < len(step_points):
                 x = step_points[i][0]
@@ -175,12 +162,13 @@ class SmartBot2(BotAIModified):
                     while y > prev_y:
                         if (self.state.creep.__getitem__((x,y)) == 0 and
                         self.state.visibility.__getitem__((x,y)) and
-                        self.game_info.placement_grid.__getitem__((x,y)) == 255):
+                        self.game_info.placement_grid.__getitem__((x,y))):
                             blank_points.append((x,y))
                         y-=1
                     y = step_points[i][1]
                     x-=1
                 i+=1
+
         if self.player_left_up == (False,False) or self.player_left_up == (True,True):
             while i < len(step_points):
                 x = step_points[i][0]
@@ -200,49 +188,115 @@ class SmartBot2(BotAIModified):
                 i+=1
         return blank_points,points_scanned
 
-    async def clean_trash_blank_points(self):
-        blank_points,points_scanned = await self.get_blank_points()
-        if self.player_left_up == (True,True):
-            for point in blank_points:
-                x = point[0]
-                y = point[1]
-                count = 0
-                #print(self.game_info.placement_grid.__getitem__((x,y)))
-                #print(self.state.creep.__getitem__((x,y)))
-                while (x > 0 and 
-                    self.game_info.placement_grid.__getitem__((x,y)) and 
-                    self.state.creep.__getitem__((x,y)) == 0):
-                    count+=1
-                    x-=1
-                print("for point : ",point," count : ", count)
-        if self.player_left_up == (False,False):
-            for point in blank_points:
-                x = point[0]
-                y = point[1]
-                count = 0
-                #print(self.game_info.placement_grid.__getitem__((x,y)))
-                #print(self.state.creep.__getitem__((x,y)))
-                while (x < self.state.creep.width and 
-                    self.game_info.placement_grid.__getitem__((x,y)) and 
-                    self.state.creep.__getitem__((x,y)) == 0):
-                    count+=1
-                    x+=1
-                print("for point : ",point," count : ", count)
-
-        '''
-        si en left_up:
-            on dit que si le point blanc a un y qui est trop proche du
-            premier terrain non visitable ou terrain creep ou non libre AU DESSUS (<15)
-            et si pareil pour sa GAUCHE
-                alors on remove le blank_points
-        '''
-
-    '''async def get_creep_points():
-        blanks_points = await self.get_blank_points
+    async def get_creep_points(self,blank_points):
         around = [(-1,0),(-1,-1),(0,-1),(1,-1),(1,0),(1,1),(0,1),(-1,1)]
-        for point in blanks_points:
+        htable = dict()
+        creep_points = list()
+        for point in blank_points:
+            x = point[0]
+            y = point[1]
             for a in around:
-    '''
+                key = (x+a[0],y+a[1])
+                if htable.get(key) == None:
+                    if self.state.creep.__getitem__(key):
+                        creep_points.append(key)
+                    htable[key] = True
+        return creep_points
+
+    async def get_earners_creep_points(self,creep_points):
+        earners_creep_points= list()
+        max_tilt = 0
+        best_x_y = (0,0)
+        tilt = 25
+        self.game_info.placement_grid.print()
+        for point in creep_points:
+            x = point[0] - 1
+            y = point[1]
+            count = 0
+            while (x > 0 and 
+                self.game_info.placement_grid.__getitem__((x,y)) and 
+                self.state.creep.__getitem__((x,y)) == 0):
+                count+=1
+                x-=1
+            if count > max_tilt:
+                max_tilt = count
+                best_x_y = point
+            if count >= tilt:
+                earners_creep_points.append((point[0],point[1]))
+                continue
+            
+            x = point[0] + 1
+            y = point[1]
+            count = 0
+            while (x < self.state.creep.width and 
+                self.game_info.placement_grid.__getitem__((x,y)) and 
+                self.state.creep.__getitem__((x,y)) == 0):
+                count+=1
+                x+=1
+            if count > max_tilt:
+                max_tilt = count
+            if count >= tilt:
+                earners_creep_points.append((point[0],point[1]))
+                continue
+            
+            x = point[0]
+            y = point[1] -1
+            count = 0
+            while (y > 0 and 
+                self.game_info.placement_grid.__getitem__((x,y)) and 
+                self.state.creep.__getitem__((x,y)) == 0):
+                count+=1
+                y-=1
+            if count > max_tilt:
+                max_tilt = count
+                best_x_y = point         
+            if count >= tilt:
+                earners_creep_points.append((point[0],point[1]))
+                continue
+
+            x = point[0]
+            y = point[1] +1
+            count = 0
+            while (y < self.state.creep.height and 
+                self.game_info.placement_grid.__getitem__((x,y)) and 
+                self.state.creep.__getitem__((x,y)) == 0):
+                count+=1
+                y+=1
+            if count > max_tilt:
+                max_tilt = count
+                best_x_y = point
+            if count >= tilt:
+                earners_creep_points.append((point[0],point[1]))
+                continue
+        print("Max tilt : ",max_tilt)
+        return best_x_y
+
+    async def clean_trash_blank_points(self):
+        '''
+        I. On tri les points en regardant si y'a bien du creep autour sinon c'est un point
+            blanc au milieu d'un point blanc qui n'a aucun intérêt
+        II. On regarde pour chaque point restant si au moins une distance gauche,droite,haut, bas
+            vaut la peine qu'on expand le creep sur ce point
+        III. Si aucun point n'est retenu il faut prendre le point le plus bas droite, etc, dépends
+            de la position de départ, et on vérifie ce point avec l'étape II. Si ce point est invalide 
+            on en prends un autre, etc. Si aucun n'est valide on reprends le point qui a le plus de valeur
+            en fonction des résultats de l'étape II.
+        '''
+        blank_points,points_scanned = await self.get_blank_points()
+        
+        #I.
+        creep_points = await self.get_creep_points(blank_points)
+        print("CREEP_POINTS : ",creep_points)
+        #II.
+        #creep_points = await self.get_earners_creep_points(creep_points)
+        best_xy = await self.get_earners_creep_points(creep_points)
+        overlords = self.units(OVERLORD).ready
+
+        # Le move inverse le y, le y part du bas alors que le point que je donne par du haut
+        await self.do1(overlords[0].move(Point2( (best_xy[0],self.state.creep.height - best_xy[1])) ))
+
+        return creep_points,best_xy
+        #III.
 
     '''
 
